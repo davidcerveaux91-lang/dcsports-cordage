@@ -1,9 +1,40 @@
-// ─── DC.SPORTS — API Push Notifications ──────────────────────────────────────
+// ─── DC.SPORTS — API Push Notifications (FCM V1) ─────────────────────────────
 // Fichier : api/send-notification.js
 // Vercel serverless function — déployé automatiquement avec ton projet
 //
 // ⚠️ Variables d'environnement à configurer dans Vercel Dashboard :
-//    FIREBASE_SERVER_KEY  →  ta Server Key Firebase (Paramètres projet > Cloud Messaging)
+//    FIREBASE_SERVICE_ACCOUNT  →  le contenu JSON de ta clé de compte de service Firebase
+//                                 (Firebase Console > Paramètres > Comptes de service > Générer clé privée)
+
+import { SignJWT, importPKCS8 } from 'jose';
+
+async function getAccessToken(serviceAccount) {
+  const now = Math.floor(Date.now() / 1000);
+  const privateKey = await importPKCS8(serviceAccount.private_key, 'RS256');
+
+  const jwt = await new SignJWT({
+    iss: serviceAccount.client_email,
+    sub: serviceAccount.client_email,
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+  })
+    .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
+    .sign(privateKey);
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error('Impossible d\'obtenir le token: ' + JSON.stringify(data));
+  }
+  return data.access_token;
+}
 
 export default async function handler(req, res) {
   // CORS
@@ -23,43 +54,63 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'token, title et body sont requis' });
   }
 
-  const serverKey = process.env.FIREBASE_SERVER_KEY;
-  if (!serverKey) {
-    return res.status(500).json({ error: 'FIREBASE_SERVER_KEY non configurée' });
+  const serviceAccountJSON = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!serviceAccountJSON) {
+    return res.status(500).json({ error: 'FIREBASE_SERVICE_ACCOUNT non configurée' });
+  }
+
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(serviceAccountJSON);
+  } catch (e) {
+    return res.status(500).json({ error: 'FIREBASE_SERVICE_ACCOUNT invalide (pas du JSON valide)' });
   }
 
   try {
-    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `key=${serverKey}`,
-      },
-      body: JSON.stringify({
-        to: token,
-        notification: {
-          title,
-          body,
-          icon:  '/icons/icon-192.png',
-          badge: '/icons/icon-96.png',
-          sound: 'default',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    const accessToken = await getAccessToken(serviceAccount);
+    const projectId = serviceAccount.project_id;
+
+    const response = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
-        data: data || {},
-        priority: 'high',
-      }),
-    });
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: {
+              title,
+              body,
+            },
+            webpush: {
+              notification: {
+                icon: '/icons/icon-192.png',
+                badge: '/icons/icon-96.png',
+                sound: 'default',
+              },
+              fcm_options: {
+                link: data?.url || '/',
+              },
+            },
+            data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : {},
+          },
+        }),
+      }
+    );
 
     const result = await response.json();
 
-    if (result.failure > 0) {
-      console.error('[FCM] Échec envoi :', result);
+    if (!response.ok) {
+      console.error('[FCM V1] Échec envoi :', result);
       return res.status(500).json({ error: 'Échec FCM', details: result });
     }
 
-    return res.status(200).json({ success: true, messageId: result.results?.[0]?.message_id });
+    return res.status(200).json({ success: true, messageId: result.name });
   } catch (err) {
-    console.error('[FCM] Erreur serveur :', err);
+    console.error('[FCM V1] Erreur serveur :', err);
     return res.status(500).json({ error: 'Erreur serveur', message: err.message });
   }
 }
