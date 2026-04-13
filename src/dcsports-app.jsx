@@ -570,14 +570,14 @@ export default function App() {
             {/* Step 3 – tension (only if string chosen) */}
             {selStr && (
               <div style={{ ...G.card, padding:26, marginBottom:16 }}>
-                <StepHead n={3} label={`Tension — ${draft.tension} lbs`} />
+                <StepHead n={3} label={`Tension — ${draft.tension} kg`} />
                 <input type="range" min={selStr.tension.min} max={selStr.tension.max} value={draft.tension}
                   onChange={e => setDraft(d => ({...d, tension:+e.target.value}))}
                   style={{ width:"100%", accentColor:"#00d4aa", marginBottom:8 }} />
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,0.38)" }}>
-                  <span>{selStr.tension.min} lbs (souple)</span>
-                  <span style={{ color:"#00d4aa", fontWeight:700 }}>Conseillé: {selStr.tension.rec} lbs</span>
-                  <span>{selStr.tension.max} lbs (tendu)</span>
+                  <span>{selStr.tension.min} kg (souple)</span>
+                  <span style={{ color:"#00d4aa", fontWeight:700 }}>Conseillé: {selStr.tension.rec} kg</span>
+                  <span>{selStr.tension.max} kg (tendu)</span>
                 </div>
                 {draft.tension <= selStr.tension.rec - 3 &&
                   <div style={{ marginTop:10, padding:"8px 12px", background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.3)", borderRadius:8, fontSize:12, color:"#f59e0b" }}>
@@ -676,7 +676,7 @@ export default function App() {
               return (
                 <div style={{ padding:"20px 22px", background:"rgba(0,212,170,0.07)", border:"1px solid rgba(0,212,170,0.22)", borderRadius:14, marginBottom:20 }}>
                   <div style={{ fontWeight:700, color:"#00d4aa", marginBottom:12 }}>📋 Récapitulatif</div>
-                  {[["Raquette",draft.racket],["Cordage",`${selStr.brand} ${selStr.name}`],["Tension",`${draft.tension} lbs`],["Couleur", draft.colorId ? selStr.colors.find(c=>c.id===draft.colorId)?.name ?? "—" : "Non sélectionnée"],["Mode",`${mode.icon} ${mode.label}`]].map(([k,v]) => (
+                  {[["Raquette",draft.racket],["Cordage",`${selStr.brand} ${selStr.name}`],["Tension",`${draft.tension} kg`],["Couleur", draft.colorId ? selStr.colors.find(c=>c.id===draft.colorId)?.name ?? "—" : "Non sélectionnée"],["Mode",`${mode.icon} ${mode.label}`]].map(([k,v]) => (
                     <div key={k} style={{ display:"flex", justifyContent:"space-between", fontSize:14, marginBottom:6 }}>
                       <span style={{ color:"rgba(255,255,255,0.5)" }}>{k}</span><span style={{ fontWeight:600 }}>{v}</span>
                     </div>
@@ -785,7 +785,7 @@ export default function App() {
                       <div>
                         <div style={{ fontWeight:700, fontSize:16 }}>{o.racket}</div>
                         <div style={{ fontSize:13, color:"rgba(255,255,255,0.48)", marginTop:2 }}>
-                          {o.string.brand} {o.string.name} · {o.tension} lbs
+                          {o.string.brand} {o.string.name} · {o.tension} kg
                           {o.colorId && (() => {
                             const c = o.string.colors?.find(c => c.id === o.colorId);
                             return c ? (
@@ -867,7 +867,7 @@ export default function App() {
                         </div>
                         <div style={{ fontSize:15, marginBottom:3 }}>🏸 {o.racket}</div>
                         <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                          {o.string.brand} {o.string.name} · {o.tension} lbs · {o.string.price}€
+                          {o.string.brand} {o.string.name} · {o.tension} kg · {o.string.price}€
                           {o.colorId && (() => {
                             const c = o.string.colors?.find(c => c.id === o.colorId);
                             return c ? (
@@ -1009,7 +1009,7 @@ export default function App() {
 
             {/* Specs grid */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:22 }}>
-              {[["Diamètre",modal.gauge],["Tension conseillée",`${modal.tension.rec} lbs`],["Type",modal.type],["Prix",`${modal.price}€`]].map(([k,v]) => (
+              {[["Diamètre",modal.gauge],["Tension conseillée",`${modal.tension.rec} kg`],["Type",modal.type],["Prix",`${modal.price}€`]].map(([k,v]) => (
                 <div key={k} style={{ background:"rgba(255,255,255,0.05)", borderRadius:10, padding:14 }}>
                   <div style={{ fontSize:10, color:"rgba(255,255,255,0.38)", marginBottom:4 }}>{k.toUpperCase()}</div>
                   <div style={{ fontWeight:700 }}>{v}</div>
