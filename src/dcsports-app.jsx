@@ -231,39 +231,39 @@ export default function App() {
       // FCM admin
       let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
       if (token) setAdminFcmToken(token);
-      await store.set('adminFcmToken', token); await saveAdminFcmToken(token);
+      if (token) { await store.set('adminFcmToken', token); await saveAdminFcmToken(token); }
       return;
     }
     const u = users.find(x => x.email === loginF.email && x.password === loginF.password);
     if (!u) { setAuthErr("Email ou mot de passe incorrect"); return; }
     setUser(u);
-    // FCM user — sauvegarder le token FCM lié à ce user
-    let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
-    if (token) {
-      const updatedUser = { ...u, fcmToken: token };
-      const updatedUsers = users.map(x => x.id === u.id ? updatedUser : x);
-      setUsers(updatedUsers);
-      await store.set('users', updatedUsers);
-      await store.set('session', updatedUser);
-    } else {
-      await store.set("session", u);
-    }
+    // Connexion immédiate - FCM en arrière-plan
     setPage("account"); notify(`Bienvenue ${u.name} !`);
+    await store.set("session", u);
+    // Initialiser FCM sans bloquer la connexion
+    initFCM().then(token => { if (!token) return;
+      const upd={...u,fcmToken:token}, upds=users.map(x=>x.id===u.id?upd:x);
+      setUser(upd); setUsers(upds); store.set('users',upds); store.set('session',upd);
+    }).catch(()=>{});
   };
+
+
+
+
 
   const doRegister = async () => {
     setAuthErr("");
     if (!regF.name || !regF.email || !regF.password) { setAuthErr("Tous les champs sont requis"); return; }
     if (users.find(x => x.email === regF.email)) { setAuthErr("Email déjà utilisé"); return; }
     const nu = { id: Date.now().toString(), ...regF, createdAt: new Date().toISOString() };
-    // FCM user — sauvegarder le token FCM lié à ce user
-    let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
-    const userWithToken = token ? { ...nu, fcmToken: token } : nu;
-    const nu_ = [...users, userWithToken]; setUsers(nu_); setUser(userWithToken);
-    await store.set("users", nu_); await store.set("session", userWithToken);
+    // Inscription immédiate - FCM en arrière-plan
+    const nu_ = [...users, nu]; setUsers(nu_); setUser(nu);
+    await store.set("users", nu_); await store.set("session", nu);
     setPage("account"); notify(`Compte créé ! Bienvenue ${nu.name} !`);
+    initFCM().then(token => { if (!token) return;
+      const upd={...nu,fcmToken:token}, upds=nu_.map(x=>x.id===nu.id?upd:x);
+      setUser(upd); setUsers(upds); store.set('users',upds); store.set('session',upd); }).catch(()=>{});
   };
-
   const doLogout = async () => { setUser(null); setIsAdmin(false); await store.set("session", null); await store.set("isAdmin", false); setPage("home"); };
   const doForgotPassword = async () => { setForgotMsg(null); const em=forgotEmail.trim().toLowerCase(); if (!em){setForgotMsg({ok:false,text:"Saisissez votre email."});return;} const u=users.find(x=>x.email.toLowerCase()===em); if(!u){setForgotMsg({ok:false,text:"Aucun compte trouvé."});return;} const np=Math.random().toString(36).slice(2,5).toUpperCase()+Math.floor(10+Math.random()*90); const upd={...u,password:np}; const upds=users.map(x=>x.id===u.id?upd:x); setUsers(upds); await store.set("users",upds); try{await sendResetPasswordEmail({toEmail:u.email,toName:u.name,newPassword:np}); setForgotMsg({ok:true,text:"Nouveau mot de passe envoyé à "+u.email}); setForgotEmail("");}catch(e){setForgotMsg({ok:false,text:"Erreur envoi. Contactez le magasin."});} };
 
