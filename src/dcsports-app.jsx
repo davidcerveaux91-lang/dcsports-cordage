@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, MapPin, LogOut, CheckCircle,h Package, AlertCircle, User, X } from "lucide-react";
+import { Clock, MapPin, LogOut, CheckCircle, Package, AlertCircle, User, X } from "lucide-react";
 import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient } from './firebase';
 
 // ─── CATALOG DATA ─────────────────────────────────────────────────────────────
