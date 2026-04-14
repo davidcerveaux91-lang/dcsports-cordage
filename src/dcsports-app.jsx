@@ -947,8 +947,8 @@ export default function App() {
                     <MapPin size={18} color="#00d4aa" /> CONTACT
                   </div>
                   <div style={{ lineHeight:2, color:"rgba(255,255,255,0.7)", fontSize:15 }}>
-                    📍 47 Boulevard de la gribelette 91390 Morsang-sur-Orge, Essonne<br />
-                    📞 0610330045<br />
+                    📍 47 Boulevard de la gribelette 91390 Morsang-sur-Orge, Essonne <br />
+                    📞 06 10 33 0 045<br />
                     🌐 dcsports.fr
                   </div>
                 </div>
