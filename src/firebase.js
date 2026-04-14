@@ -6,16 +6,16 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Firebase config – DCSPORTS-CORDAGE
 const firebaseConfig = {
-  apiKey:            "AIzaSyBdZ3oMf3eP60Q3TbWiltW1O2vc6yoWwag",
-  authDomain:        "dcsports-cordage.firebaseapp.com",
-  projectId:         "dcsports-cordage",
-  storageBucket:     "dcsports-cordage.firebasestorage.app",
-  messagingSenderId: "424771279256",
-  appId:             "1:424771279256:web:274b4ae31396e396ebf3ed",
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Clé VAPID publique (Firebase Console → Cloud Messaging → Certificats Web Push)
-const VAPID_KEY = "BKGRJ-mKNIXdwmv1jHGthDPFqNBVqFgfDxr5dhU32NKDnzt4MLNNHA1eW3ypwa-3MXILBo17NlMnZG7ukj_EZi4";
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 const app = initializeApp(firebaseConfig);
