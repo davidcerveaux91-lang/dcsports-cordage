@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock, MapPin, LogOut, CheckCircle, Package, AlertCircle, User, X } from "lucide-react";
-import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient , saveAdminFcmToken, getAdminFcmToken, sendResetPasswordEmail } from './firebase';
+import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient, saveAdminFcmToken, getAdminFcmToken, sendResetPasswordEmail, saveUser, getUsers, getUserByEmail, saveOrder, getOrders, updateOrder } from './firebase';
 
 // ─── CATALOG DATA ─────────────────────────────────────────────────────────────
 
@@ -196,13 +196,16 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-  try {
-        const u  = await store.get("users")   || [];
-        const o  = await store.get("orders")  || [];
-        const s  = await store.get("session"); const adminSaved = await store.get("isAdmin");
+      try {
+        const u = await getUsers();
+        const o = await getOrders();
         setUsers(u); setOrders(o);
-        if (adminSaved) { setIsAdmin(true); setPage("admin"); } else if (s) { const found = u.find(x => x.id === s.id); if (found) { setUser(found); setPage("account"); } }
-  
+        const adminSaved = localStorage.getItem('dcsports_isAdmin') === 'true';
+        const sessionStr = localStorage.getItem('dcsports_session');
+        const s = sessionStr ? JSON.parse(sessionStr) : null;
+        if (adminSaved) { setIsAdmin(true); setPage("admin"); }
+        else if (s) { const found = u.find(x => x.id === s.id); if (found) { setUser(found); setPage("account"); } }
+        initFCM().then(token => { if (token) listenForegroundMessages(p => notify(p.notification?.title || 'Notification')); });
       } catch (e) { console.error("Init error:", e); }
     })();
   }, []);
@@ -226,25 +229,37 @@ export default function App() {
 
   const doLogin = async () => {
     setAuthErr("");
-    if (loginF.email === "admin" && loginF.password === ADMIN_CODE) {
-      setIsAdmin(true); setPage("admin"); await store.set("isAdmin", true);
-      // FCM admin
-      let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
-      if (token) setAdminFcmToken(token);
-      if (token) { await store.set('adminFcmToken', token); await saveAdminFcmToken(token); }
+    // Connexion admin
+    if (loginF.email === import.meta.env.VITE_ADMIN_EMAIL && loginF.password === import.meta.env.VITE_ADMIN_PASSWORD) {
+      setIsAdmin(true); setPage("admin"); localStorage.setItem('dcsports_isAdmin', 'true');
+      try {
+        const token = await initFCM();
+        if (token) { setAdminFcmToken(token); localStorage.setItem('dcsports_adminFcmToken', token); await saveAdminFcmToken(token); }
+      } catch(e) { console.warn("FCM admin init failed:", e); }
       return;
     }
-    const u = users.find(x => x.email === loginF.email && x.password === loginF.password);
-    if (!u) { setAuthErr("Email ou mot de passe incorrect"); return; }
+    // Connexion client - chercher dans Firestore
+    const u = await getUserByEmail(loginF.email);
+    if (!u || u.password !== loginF.password) { setAuthErr("Email ou mot de passe incorrect"); return; }
     setUser(u);
-    // Connexion immédiate - FCM en arrière-plan
-    setPage("account"); notify(`Bienvenue ${u.name} !`);
-    await store.set("session", u);
-    // Initialiser FCM sans bloquer la connexion
-    initFCM().then(token => { if (!token) return;
-      const upd={...u,fcmToken:token}, upds=users.map(x=>x.id===u.id?upd:x);
-      setUser(upd); setUsers(upds); store.set('users',upds); store.set('session',upd);
-    }).catch(()=>{});
+    // Sauvegarder FCM token du client dans Firestore
+    try {
+      const token = await initFCM();
+      if (token) {
+        const updatedUser = { ...u, fcmToken: token };
+        setUser(updatedUser);
+        await saveUser(updatedUser);
+        localStorage.setItem('dcsports_session', JSON.stringify(updatedUser));
+      } else {
+        localStorage.setItem('dcsports_session', JSON.stringify(u));
+      }
+    } catch(e) {
+      localStorage.setItem('dcsports_session', JSON.stringify(u));
+    }
+    // Recharger la liste users
+    const allUsers = await getUsers();
+    setUsers(allUsers);
+    setPage("account"); notify('Bienvenue ' + u.name + ' !');
   };
 
 
@@ -254,18 +269,27 @@ export default function App() {
   const doRegister = async () => {
     setAuthErr("");
     if (!regF.name || !regF.email || !regF.password) { setAuthErr("Tous les champs sont requis"); return; }
-    if (users.find(x => x.email === regF.email)) { setAuthErr("Email déjà utilisé"); return; }
-    const nu = { id: Date.now().toString(), ...regF, createdAt: new Date().toISOString() };
-    // Inscription immédiate - FCM en arrière-plan
-    const nu_ = [...users, nu]; setUsers(nu_); setUser(nu);
-    await store.set("users", nu_); await store.set("session", nu);
-    setPage("account"); notify(`Compte créé ! Bienvenue ${nu.name} !`);
-    initFCM().then(token => { if (!token) return;
-      const upd={...nu,fcmToken:token}, upds=nu_.map(x=>x.id===nu.id?upd:x);
-      setUser(upd); setUsers(upds); store.set('users',upds); store.set('session',upd); }).catch(()=>{});
+    // Vérifier si l'email existe déjà dans Firestore
+    const existing = await getUserByEmail(regF.email);
+    if (existing) { setAuthErr("Email déjà utilisé"); return; }
+    const nu = { id: Date.now().toString(), name: regF.name, email: regF.email, password: regF.password, createdAt: new Date().toISOString() };
+    // Récupérer le token FCM pour les notifications client
+    let userWithToken = nu;
+    try {
+      const token = await initFCM();
+      if (token) userWithToken = { ...nu, fcmToken: token };
+    } catch(e) { console.warn("FCM init failed:", e); }
+    // Sauvegarder dans Firestore
+    await saveUser(userWithToken);
+    // Mettre à jour l'état local
+    const allUsers = await getUsers();
+    setUsers(allUsers);
+    setUser(userWithToken);
+    localStorage.setItem('dcsports_session', JSON.stringify(userWithToken));
+    setPage("account"); notify('Compte créé ! Bienvenue ' + nu.name + ' !');
   };
-  const doLogout = async () => { setUser(null); setIsAdmin(false); await store.set("session", null); await store.set("isAdmin", false); setPage("home"); };
-  const doForgotPassword = async () => { setForgotMsg(null); const em=forgotEmail.trim().toLowerCase(); if (!em){setForgotMsg({ok:false,text:"Saisissez votre email."});return;} const u=users.find(x=>x.email.toLowerCase()===em); if(!u){setForgotMsg({ok:false,text:"Aucun compte trouvé."});return;} const np=Math.random().toString(36).slice(2,5).toUpperCase()+Math.floor(10+Math.random()*90); const upd={...u,password:np}; const upds=users.map(x=>x.id===u.id?upd:x); setUsers(upds); await store.set("users",upds); try{await sendResetPasswordEmail({toEmail:u.email,toName:u.name,newPassword:np}); setForgotMsg({ok:true,text:"Nouveau mot de passe envoyé à "+u.email}); setForgotEmail("");}catch(e){setForgotMsg({ok:false,text:"Erreur envoi. Contactez le magasin."});} };
+  const doLogout = async () => { setUser(null); setIsAdmin(false); localStorage.removeItem("dcsports_session"); localStorage.setItem("dcsports_isAdmin", "false"); setPage("home"); };
+  const doForgotPassword = async () => { setForgotMsg(null); const em=forgotEmail.trim().toLowerCase(); if (!em){setForgotMsg({ok:false,text:"Saisissez votre email."});return;} const u=users.find(x=>x.email.toLowerCase()===em); if(!u){setForgotMsg({ok:false,text:"Aucun compte trouvé."});return;} const np=Math.random().toString(36).slice(2,5).toUpperCase()+Math.floor(10+Math.random()*90); const upd={...u,password:np}; const upds=users.map(x=>x.id===u.id?upd:x); setUsers(upds); await saveUser(upds.find(u => u.email === forgotEmail)); const allU = await getUsers(); setUsers(allU); try{await sendResetPasswordEmail({toEmail:u.email,toName:u.name,newPassword:np}); setForgotMsg({ok:true,text:"Nouveau mot de passe envoyé à "+u.email}); setForgotEmail("");}catch(e){setForgotMsg({ok:false,text:"Erreur envoi. Contactez le magasin."});} };
 
   // ── ORDER ─────────────────────────────────────────────────────────────────
 
@@ -275,27 +299,35 @@ export default function App() {
     const newOrder = { id: Date.now().toString(), userId: user.id, userName: user.name,
       racket: draft.racket, string: str, tension: draft.tension, colorId: draft.colorId, notes: draft.notes, deliveryMode: draft.deliveryMode,
       status: "pending", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    const no = [...orders, newOrder]; setOrders(no); await store.set("orders", no);
+    // Sauvegarder la commande dans Firestore
+    try { await saveOrder(newOrder); } catch(e) { notify("Erreur lors de la commande", "err"); return; }
+    // Mettre à jour l'état local
+    const allOrders = await getOrders();
+    setOrders(allOrders);
     // Notifier l'admin via push notification
-    const savedAdminToken = await getAdminFcmToken() || await store.get('adminFcmToken');
-    if (savedAdminToken) {
-      try { await notifyAdmin({ adminFcmToken: savedAdminToken, order: newOrder }); } catch(e) { console.warn("Admin notify failed:", e); }
-    }
+    try {
+      const adminToken = await getAdminFcmToken();
+      if (adminToken) { await notifyAdmin({ adminFcmToken: adminToken, order: newOrder }); }
+    } catch(e) { console.warn("Admin notify failed:", e); }
     setDraft({ racket:"", stringId:null, colorId:null, tension:24, notes:"", deliveryMode:"standard" });
-    setPage("account"); notify("Demande envoyée ! Déposez votre raquette au magasin.");
+    setPage("account"); notify("Commande envoyée ! Nous vous contacterons bientôt.");
   };
 
   const updateStatus = async (id, status) => {
+    // Mettre à jour dans Firestore
+    try { await updateOrder(id, { status }); } catch(e) { notify("Erreur mise à jour commande", "err"); return; }
+    // Mettre à jour l'état local
     const no = orders.map(o => o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o);
-    setOrders(no); await store.set("orders", no);
+    setOrders(no);
+    // Notifier le client si commande prête
     if (status === "ready") {
-      const order = orders.find(o => o.id === id);
-      // Notifier le client via push notification
-      const clientUser = users.find(u => u.id === order.userId);
-      if (clientUser?.fcmToken) {
-        try { await notifyClient({ clientFcmToken: clientUser.fcmToken, order }); } catch(e) { console.warn("Client notify failed:", e); }
+      const order = no.find(o => o.id === id);
+      if (order) {
+        const clientUser = users.find(u => u.id === order.userId);
+        if (clientUser && clientUser.fcmToken) {
+          try { await notifyClient({ clientFcmToken: clientUser.fcmToken, order }); } catch(e) { console.warn("Client notify failed:", e); }
+        }
       }
-      notify(`🔔 Notification envoyée à ${order.userName}`);
     }
   };
 
