@@ -129,8 +129,8 @@ const DELIVERY_MODES = [
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
 
 const store = {
-  async get(k) { try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; } },
-  async set(k, v) { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
+  async get(k) { try { const v = localStorage.getItem('dcsports_'+k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  async set(k, v) { try { localStorage.setItem('dcsports_'+k, JSON.stringify(v)); } catch {} },
 };
 
 // ─── SMALL COMPONENTS ─────────────────────────────────────────────────────────
@@ -198,9 +198,9 @@ export default function App() {
   try {
         const u  = await store.get("users")   || [];
         const o  = await store.get("orders")  || [];
-        const s  = await store.get("session");
+        const s  = await store.get("session"); const adminSaved = await store.get("isAdmin");
         setUsers(u); setOrders(o);
-        if (s) { const found = u.find(x => x.id === s.id); if (found) setUser(found); }
+        if (adminSaved) { setIsAdmin(true); setPage("admin"); } else if (s) { const found = u.find(x => x.id === s.id); if (found) { setUser(found); setPage("account"); } }
   
       } catch (e) { console.error("Init error:", e); }
     })();
@@ -226,7 +226,7 @@ export default function App() {
   const doLogin = async () => {
     setAuthErr("");
     if (loginF.email === "admin" && loginF.password === ADMIN_CODE) {
-      setIsAdmin(true); setPage("admin");
+      setIsAdmin(true); setPage("admin"); await store.set("isAdmin", true);
       // FCM admin
       let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
       if (token) setAdminFcmToken(token);
@@ -263,7 +263,7 @@ export default function App() {
     setPage("account"); notify(`Compte créé ! Bienvenue ${nu.name} !`);
   };
 
-  const doLogout = async () => { setUser(null); setIsAdmin(false); await store.set("session", null); setPage("home"); };
+  const doLogout = async () => { setUser(null); setIsAdmin(false); await store.set("session", null); await store.set("isAdmin", false); setPage("home"); };
 
   // ── ORDER ─────────────────────────────────────────────────────────────────
 
