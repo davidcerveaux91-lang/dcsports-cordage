@@ -116,4 +116,38 @@ export async function notifyClient({ clientFcmToken, order }) {
           body:  `${order.racket} – Venez la récupérer au magasin DC.SPORTS`,
           data:  { type: 'order_ready', orderId: order.id, url: '/?page=account' },
     });
+
+// ── Réinitialisation du mot de passe par email (EmailJS) ─────────────────────
+// Variables d'env requises : VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, VITE_EMAILJS_PUBLIC_KEY
+export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
+  const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  if (!serviceId || !templateId || !publicKey) {
+    console.error('[EmailJS] Variables manquantes');
+    throw new Error('EmailJS non configuré');
+  }
+
+  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id:  serviceId,
+      template_id: templateId,
+      user_id:     publicKey,
+      template_params: {
+        to_email:     toEmail,
+        to_name:      toName || toEmail,
+        new_password: newPassword,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error('Échec envoi email : ' + text);
+  }
+  console.log('[EmailJS] Email envoyé à', toEmail);
+}
 }
