@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock, MapPin, LogOut, CheckCircle, Package, AlertCircle, User, X } from "lucide-react";
-import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient } from './firebase';
+import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient , saveAdminFcmToken, getAdminFcmToken} from './firebase';h
 
 // ─── CATALOG DATA ─────────────────────────────────────────────────────────────
 
@@ -230,7 +230,7 @@ export default function App() {
       // FCM admin
       let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
       if (token) setAdminFcmToken(token);
-      await store.set('adminFcmToken', token);
+      await store.set('adminFcmToken', token); await saveAdminFcmToken(token);
       return;
     }
     const u = users.find(x => x.email === loginF.email && x.password === loginF.password);
@@ -275,7 +275,7 @@ export default function App() {
       status: "pending", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     const no = [...orders, newOrder]; setOrders(no); await store.set("orders", no);
     // Notifier l'admin via push notification
-    const savedAdminToken = await store.get('adminFcmToken');
+    const savedAdminToken = await getAdminFcmToken() || await store.get('adminFcmToken');
     if (savedAdminToken) {
       try { await notifyAdmin({ adminFcmToken: savedAdminToken, order: newOrder }); } catch(e) { console.warn("Admin notify failed:", e); }
     }
