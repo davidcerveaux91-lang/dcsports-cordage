@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, MapPin, LogOut, CheckCircle, Package, AlertCircle, User, X } from "lucide-react";
+import { Clock, MapPin, LogOut, CheckCircle,h Package, AlertCircle, User, X } from "lucide-react";
 import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient } from './firebase';
 
 // ─── CATALOG DATA ─────────────────────────────────────────────────────────────
@@ -195,11 +195,14 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const u  = await store.get("users")   || [];
-      const o  = await store.get("orders")  || [];
-      const s  = await store.get("session");
-      setUsers(u); setOrders(o);
-      if (s) { const found = u.find(x => x.id === s.id); if (found) setUser(found); }
+  try {
+        const u  = await store.get("users")   || [];
+        const o  = await store.get("orders")  || [];
+        const s  = await store.get("session");
+        setUsers(u); setOrders(o);
+        if (s) { const found = u.find(x => x.id === s.id); if (found) setUser(found); }
+  
+      } catch (e) { console.error("Init error:", e); }
     })();
   }, []);
 
@@ -208,10 +211,13 @@ export default function App() {
   // ── FCM Foreground Listener ─────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = listenForegroundMessages((payload) => {
+    let unsubscribe = null;
+    try {
+      unsubscribe = listenForegroundMessages((payload) => {
       const { title, body } = payload.notification || {};
       notify(`${title} — ${body}`);
     });
+    } catch(e) { console.warn("FCM listener failed:", e); }
     return unsubscribe;
   }, [user]);
 
@@ -222,7 +228,7 @@ export default function App() {
     if (loginF.email === "admin" && loginF.password === ADMIN_CODE) {
       setIsAdmin(true); setPage("admin");
       // FCM admin
-      const token = await initFCM();
+      let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
       if (token) setAdminFcmToken(token);
       await store.set('adminFcmToken', token);
       return;
@@ -231,7 +237,7 @@ export default function App() {
     if (!u) { setAuthErr("Email ou mot de passe incorrect"); return; }
     setUser(u);
     // FCM user — sauvegarder le token FCM lié à ce user
-    const token = await initFCM();
+    let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
     if (token) {
       const updatedUser = { ...u, fcmToken: token };
       const updatedUsers = users.map(x => x.id === u.id ? updatedUser : x);
@@ -250,7 +256,7 @@ export default function App() {
     if (users.find(x => x.email === regF.email)) { setAuthErr("Email déjà utilisé"); return; }
     const nu = { id: Date.now().toString(), ...regF, createdAt: new Date().toISOString() };
     // FCM user — sauvegarder le token FCM lié à ce user
-    const token = await initFCM();
+    let token = null; try { token = await initFCM(); } catch(e) { console.warn("FCM init failed:", e); }
     const userWithToken = token ? { ...nu, fcmToken: token } : nu;
     const nu_ = [...users, userWithToken]; setUsers(nu_); setUser(userWithToken);
     await store.set("users", nu_); await store.set("session", userWithToken);
@@ -271,7 +277,7 @@ export default function App() {
     // Notifier l'admin via push notification
     const savedAdminToken = await store.get('adminFcmToken');
     if (savedAdminToken) {
-      await notifyAdmin({ adminFcmToken: savedAdminToken, order: newOrder });
+      try { await notifyAdmin({ adminFcmToken: savedAdminToken, order: newOrder }); } catch(e) { console.warn("Admin notify failed:", e); }
     }
     setDraft({ racket:"", stringId:null, colorId:null, tension:24, notes:"", deliveryMode:"standard" });
     setPage("account"); notify("Demande envoyée ! Déposez votre raquette au magasin.");
@@ -285,7 +291,7 @@ export default function App() {
       // Notifier le client via push notification
       const clientUser = users.find(u => u.id === order.userId);
       if (clientUser?.fcmToken) {
-        await notifyClient({ clientFcmToken: clientUser.fcmToken, order });
+        try { await notifyClient({ clientFcmToken: clientUser.fcmToken, order }); } catch(e) { console.warn("Client notify failed:", e); }
       }
       notify(`🔔 Notification envoyée à ${order.userName}`);
     }
