@@ -1,153 +1,150 @@
-// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ DC.SPORTS Ã¢ÂÂ Firebase FCM Utility Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ─── DC.SPORTS ─── Firebase Utility ───────────────────────────────────────
 // Fichier : src/firebase.js
 // Importe ce fichier dans ton composant principal (dcsports-app.jsx)
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, query, orderBy } from 'firebase/firestore';
 
-// Firebase config Ã¢ÂÂ DCSPORTS-CORDAGE
+// Firebase config ─── DCSPORTS-CORDAGE
 const firebaseConfig = {
-    apiKey:             import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain:         import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId:          import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket:      import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId:  import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId:              import.meta.env.VITE_FIREBASE_APP_ID,
+    apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// ClÃÂ© VAPID publique (Firebase Console Ã¢ÂÂ Cloud Messaging Ã¢ÂÂ Certificats Web Push)
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+let messaging = null;
+try { messaging = getMessaging(app); } catch(e) { console.warn('[FCM] Messaging non disponible:', e.message); }
 
-// Ã¢ÂÂÃ¢ÂÂ Init Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-const app       = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
-const db        = getFirestore(app);
-
-// Ã¢ÂÂÃ¢ÂÂ Demander la permission + rÃÂ©cupÃÂ©rer le token FCM Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ─── FCM init ─────────────────────────────────────────────────────────────
 export async function initFCM() {
+    if (!messaging) return null;
     try {
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-                  console.warn('[FCM] Permission refusÃÂ©e');
-                  return null;
-          }
-          const registration = await navigator.serviceWorker.ready;
-          const token = await getToken(messaging, {
-                  vapidKey: VAPID_KEY,
-                  serviceWorkerRegistration: registration,
-          });
-          console.log('[FCM] Token obtenu :', token);
-          return token;
-    } catch (err) {
-          console.error('[FCM] Erreur init :', err);
-          return null;
-    }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return null;
+        const token = await getToken(messaging, {
+            vapidKey: VAPID_KEY,
+            serviceWorkerRegistration: await navigator.serviceWorker.ready,
+        });
+        return token || null;
+    } catch(e) { console.warn('[FCM] initFCM error:', e.message); return null; }
 }
 
-// Ã¢ÂÂÃ¢ÂÂ ÃÂcouter les messages quand l'app est au premier plan Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 export function listenForegroundMessages(callback) {
-    return onMessage(messaging, (payload) => {
-          console.log('[FCM] Message premier plan :', payload);
-          callback(payload);
+    if (!messaging) return;
+    onMessage(messaging, payload => {
+        callback({
+            title: payload.notification?.title || 'DC.SPORTS',
+            body:  payload.notification?.body  || '',
+            data:  payload.data || {},
+        });
     });
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Stocker / lire le token FCM admin dans Firestore Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-// Permet ÃÂ  n'importe quel client (autre appareil) de notifier l'admin
+// ─── Admin FCM token ───────────────────────────────────────────────────────
 export async function saveAdminFcmToken(token) {
     if (!token) return;
     try {
-          await setDoc(
-                  doc(db, 'config', 'admin'),
-            { fcmToken: token, updatedAt: new Date().toISOString() },
-            { merge: true }
-                );
-          console.log('[FCM] Token admin sauvegardÃÂ© dans Firestore');
-    } catch (err) {
-          console.error('[FCM] Erreur sauvegarde token admin :', err);
-    }
+        await setDoc(doc(db, 'config', 'admin'), { fcmToken: token, updatedAt: new Date().toISOString() }, { merge: true });
+    } catch (err) { console.error('[FCM] Erreur sauvegarde token admin :', err); }
 }
 
 export async function getAdminFcmToken() {
     try {
-          const snap = await getDoc(doc(db, 'config', 'admin'));
-          if (snap.exists()) {
-                  return snap.data().fcmToken || null;
-          }
-          return null;
-    } catch (err) {
-          console.error('[FCM] Erreur lecture token admin :', err);
-          return null;
-    }
+        const snap = await getDoc(doc(db, 'config', 'admin'));
+        if (snap.exists()) return snap.data().fcmToken || null;
+    } catch(e) { console.warn('[FCM] getAdminFcmToken error:', e); }
+    return null;
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Envoyer une notification via notre API Vercel Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ─── Push notification ─────────────────────────────────────────────────────
 export async function sendPushNotification({ token, title, body, data = {} }) {
     if (!token) return;
     try {
-          const res = await fetch('/api/send-notification', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ token, title, body, data }),
-          });
-          if (!res.ok) {
-                  const err = await res.json();
-                  console.error('[Push] Erreur envoi :', err);
-          }
-    } catch (err) {
-          console.error('[Push] Erreur rÃÂ©seau :', err);
-    }
+        const res = await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, title, body, data }),
+        });
+        if (!res.ok) console.warn('[FCM] sendPush HTTP error:', res.status);
+    } catch(e) { console.warn('[FCM] sendPush fetch error:', e); }
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Helpers prÃÂªts ÃÂ  l'emploi Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 export async function notifyAdmin({ adminFcmToken, order }) {
     return sendPushNotification({
-          token: adminFcmToken,
-          title: 'Ã°ÂÂÂ¾ Nouvelle demande de cordage',
-          body:  `${order.userName} Ã¢ÂÂ ${order.string.brand} ${order.string.name} ÃÂ· ${order.tension} lbs`,
-          data:  { type: 'new_order', orderId: order.id, url: '/?page=admin' },
+        token: adminFcmToken,
+        title: 'Nouvelle demande de cordage',
+        body:  order.userName + ' - ' + order.string.brand + ' ' + order.string.name + ' - ' + order.tension + ' lbs',
+        data:  { type: 'new_order', orderId: order.id, url: '/?page=admin' },
     });
 }
 
 export async function notifyClient({ clientFcmToken, order }) {
     return sendPushNotification({
-          token: clientFcmToken,
-          title: 'Ã¢ÂÂ Votre raquette est prÃÂªte !',
-          body:  `${order.racket} Ã¢ÂÂ Venez la rÃÂ©cupÃÂ©rer au magasin DC.SPORTS`,
-          data:  { type: 'order_ready', orderId: order.id, url: '/?page=account' },
+        token: clientFcmToken,
+        title: 'Votre raquette est prete !',
+        body:  order.string.brand + ' ' + order.string.name + ' - ' + order.racket,
+        data:  { type: 'order_ready', orderId: order.id, url: '/?page=account' },
     });
 }
 
-// Ã¢ÂÂÃ¢ÂÂ RÃÂ©initialisation du mot de passe par email (EmailJS) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-// Variables d'env requises : VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, VITE_EMAILJS_PUBLIC_KEY
+// ─── Firestore : Utilisateurs ──────────────────────────────────────────────
+export async function saveUserToFirestore(user) {
+    try { await setDoc(doc(db, 'users', user.id), user, { merge: true }); }
+    catch(e) { console.error('[DB] saveUser error:', e); }
+}
+
+export async function getAllUsersFromFirestore() {
+    try {
+        const snap = await getDocs(collection(db, 'users'));
+        return snap.docs.map(d => d.data());
+    } catch(e) { console.error('[DB] getUsers error:', e); return []; }
+}
+
+// ─── Firestore : Commandes ─────────────────────────────────────────────────
+export async function saveOrderToFirestore(order) {
+    try { await setDoc(doc(db, 'orders', order.id), order, { merge: true }); }
+    catch(e) { console.error('[DB] saveOrder error:', e); }
+}
+
+export async function getAllOrdersFromFirestore() {
+    try {
+        const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => d.data());
+    } catch(e) {
+        try {
+            const snap = await getDocs(collection(db, 'orders'));
+            return snap.docs.map(d => d.data());
+        } catch(e2) { return []; }
+    }
+}
+
+export async function updateOrderInFirestore(orderId, updates) {
+    try { await updateDoc(doc(db, 'orders', orderId), updates); }
+    catch(e) { console.error('[DB] updateOrder error:', e); }
+}
+
+// ─── EmailJS : Mot de passe oublie ────────────────────────────────────────
 export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
-  const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-  const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-  if (!serviceId || !templateId || !publicKey) {
-    console.error('[EmailJS] Variables manquantes');
-    throw new Error('EmailJS non configurÃÂ©');
-  }
-
-  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      service_id:  serviceId,
-      template_id: templateId,
-      user_id:     publicKey,
-      template_params: {
-        to_email:     toEmail,
-        to_name:      toName || toEmail,
-        new_password: newPassword,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error('ÃÂchec envoi email : ' + text);
-  }
-  console.log('[EmailJS] Email envoyÃÂ© ÃÂ ', toEmail);
+    const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    const payload = {
+        service_id:  serviceId,
+        template_id: templateId,
+        user_id:     publicKey,
+        template_params: { to_email: toEmail, to_name: toName, new_password: newPassword },
+    };
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('EmailJS error: ' + res.status);
 }
