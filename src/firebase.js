@@ -1,11 +1,11 @@
-// âââ DC.SPORTS â Firebase FCM Utility ââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ DC.SPORTS Ã¢ÂÂ Firebase FCM Utility Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 // Fichier : src/firebase.js
 // Importe ce fichier dans ton composant principal (dcsports-app.jsx)
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
-// Firebase config â DCSPORTS-CORDAGE
+// Firebase config Ã¢ÂÂ DCSPORTS-CORDAGE
 const firebaseConfig = {
     apiKey:             import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain:         import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,20 +15,20 @@ const firebaseConfig = {
     appId:              import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// ClÃ© VAPID publique (Firebase Console â Cloud Messaging â Certificats Web Push)
+// ClÃÂ© VAPID publique (Firebase Console Ã¢ÂÂ Cloud Messaging Ã¢ÂÂ Certificats Web Push)
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
-// ââ Init âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ Init Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 const app       = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 const db        = getFirestore(app);
 
-// ââ Demander la permission + rÃ©cupÃ©rer le token FCM âââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ Demander la permission + rÃÂ©cupÃÂ©rer le token FCM Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 export async function initFCM() {
     try {
           const permission = await Notification.requestPermission();
           if (permission !== 'granted') {
-                  console.warn('[FCM] Permission refusÃ©e');
+                  console.warn('[FCM] Permission refusÃÂ©e');
                   return null;
           }
           const registration = await navigator.serviceWorker.ready;
@@ -44,7 +44,7 @@ export async function initFCM() {
     }
 }
 
-// ââ Ãcouter les messages quand l'app est au premier plan ââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ ÃÂcouter les messages quand l'app est au premier plan Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 export function listenForegroundMessages(callback) {
     return onMessage(messaging, (payload) => {
           console.log('[FCM] Message premier plan :', payload);
@@ -52,8 +52,8 @@ export function listenForegroundMessages(callback) {
     });
 }
 
-// ââ Stocker / lire le token FCM admin dans Firestore ââââââââââââââââââââââââ
-// Permet Ã  n'importe quel client (autre appareil) de notifier l'admin
+// Ã¢ÂÂÃ¢ÂÂ Stocker / lire le token FCM admin dans Firestore Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// Permet ÃÂ  n'importe quel client (autre appareil) de notifier l'admin
 export async function saveAdminFcmToken(token) {
     if (!token) return;
     try {
@@ -62,7 +62,7 @@ export async function saveAdminFcmToken(token) {
             { fcmToken: token, updatedAt: new Date().toISOString() },
             { merge: true }
                 );
-          console.log('[FCM] Token admin sauvegardÃ© dans Firestore');
+          console.log('[FCM] Token admin sauvegardÃÂ© dans Firestore');
     } catch (err) {
           console.error('[FCM] Erreur sauvegarde token admin :', err);
     }
@@ -81,7 +81,7 @@ export async function getAdminFcmToken() {
     }
 }
 
-// ââ Envoyer une notification via notre API Vercel âââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ Envoyer une notification via notre API Vercel Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 export async function sendPushNotification({ token, title, body, data = {} }) {
     if (!token) return;
     try {
@@ -95,16 +95,16 @@ export async function sendPushNotification({ token, title, body, data = {} }) {
                   console.error('[Push] Erreur envoi :', err);
           }
     } catch (err) {
-          console.error('[Push] Erreur rÃ©seau :', err);
+          console.error('[Push] Erreur rÃÂ©seau :', err);
     }
 }
 
-// ââ Helpers prÃªts Ã  l'emploi âââââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ Helpers prÃÂªts ÃÂ  l'emploi Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 export async function notifyAdmin({ adminFcmToken, order }) {
     return sendPushNotification({
           token: adminFcmToken,
-          title: 'ð¾ Nouvelle demande de cordage',
-          body:  `${order.userName} â ${order.string.brand} ${order.string.name} Â· ${order.tension} lbs`,
+          title: 'Ã°ÂÂÂ¾ Nouvelle demande de cordage',
+          body:  `${order.userName} Ã¢ÂÂ ${order.string.brand} ${order.string.name} ÃÂ· ${order.tension} lbs`,
           data:  { type: 'new_order', orderId: order.id, url: '/?page=admin' },
     });
 }
@@ -112,13 +112,13 @@ export async function notifyAdmin({ adminFcmToken, order }) {
 export async function notifyClient({ clientFcmToken, order }) {
     return sendPushNotification({
           token: clientFcmToken,
-          title: 'â Votre raquette est prÃªte !',
-          body:  `${order.racket} â Venez la rÃ©cupÃ©rer au magasin DC.SPORTS`,
+          title: 'Ã¢ÂÂ Votre raquette est prÃÂªte !',
+          body:  `${order.racket} Ã¢ÂÂ Venez la rÃÂ©cupÃÂ©rer au magasin DC.SPORTS`,
           data:  { type: 'order_ready', orderId: order.id, url: '/?page=account' },
     });
 }
 
-// ââ RÃ©initialisation du mot de passe par email (EmailJS) âââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂ RÃÂ©initialisation du mot de passe par email (EmailJS) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 // Variables d'env requises : VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, VITE_EMAILJS_PUBLIC_KEY
 export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
   const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -127,7 +127,7 @@ export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
 
   if (!serviceId || !templateId || !publicKey) {
     console.error('[EmailJS] Variables manquantes');
-    throw new Error('EmailJS non configurÃ©');
+    throw new Error('EmailJS non configurÃÂ©');
   }
 
   const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
@@ -147,8 +147,7 @@ export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error('Ãchec envoi email : ' + text);
+    throw new Error('ÃÂchec envoi email : ' + text);
   }
-  console.log('[EmailJS] Email envoyÃ© Ã ', toEmail);
-}
+  console.log('[EmailJS] Email envoyÃÂ© ÃÂ ', toEmail);
 }
