@@ -108,11 +108,11 @@ const STRINGS = [
 
 const HOURS = [
   { day:"Lundi", h:"Fermé" },
-  { day:"Mardi", h:"14h00 – 19h00" },
-  { day:"Mercredi", h:"10h00 – 19h00" },
-  { day:"Jeudi", h:"14h00 – 19h00" },
-  { day:"Vendredi", h:"14h00 – 19h00" },
-  { day:"Samedi", h:"10h00 – 18h00" },
+  { day:"Mardi", h:"13h00 – 18h30" },
+  { day:"Mercredi", h:"11h00 – 18h30" },
+  { day:"Jeudi", h:"11h00 – 18h30" },
+  { day:"Vendredi", h:"11h00 – 18h30" },
+  { day:"Samedi", h:"10h00 – 17h30" },
   { day:"Dimanche", h:"Fermé" },
 ];
 
@@ -947,8 +947,8 @@ export default function App() {
                     <MapPin size={18} color="#00d4aa" /> CONTACT
                   </div>
                   <div style={{ lineHeight:2, color:"rgba(255,255,255,0.7)", fontSize:15 }}>
-                    📍 Morsang-sur-Orge, Essonne (91)<br />
-                    📞 01 XX XX XX XX<br />
+                    📍 47 Boulevard de la gribelette 91390 Morsang-sur-Orge, Essonne<br />
+                    📞 0610330045<br />
                     🌐 dcsports.fr
                   </div>
                 </div>
