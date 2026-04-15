@@ -116,7 +116,7 @@ const HOURS = [
   { day:"Dimanche", h:"Fermé" },
 ];
 
-const ADMIN_CODE = "admin2024";
+const ADMIN_CODE = import.meta.env.VITE_ADMIN_CODE;
 const TODAY_NAME = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"][new Date().getDay()];
 
 const DELIVERY_MODES = [
@@ -191,6 +191,7 @@ export default function App() {
   const [regF,    setRegF]    = useState({ name:"", email:"", password:"" });
   const [authErr, setAuthErr] = useState("");
   const [adminPwd,setAdminPwd]= useState("");
+  const [adminClickCount, setAdminClickCount] = useState(0);
   const [draft,   setDraft]   = useState({ racket:"", stringId:null, colorId:null, tension:24, notes:"", deliveryMode:"standard" });
   const [brandFilter, setBrandFilter] = useState("Tous");
 
@@ -406,7 +407,7 @@ export default function App() {
         <div style={{ maxWidth:900, margin:"0 auto", padding:"0 18px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
 
           {/* Logo */}
-          <div className="hov" onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div className="hov" onClick={() => { setPage("home"); setAdminClickCount(c => { const n=c+1; if(n>=5){ setTimeout(()=>setPage("admin"),10); return 0; } clearTimeout(window._aT); window._aT=setTimeout(()=>setAdminClickCount(0),2000); return n; }); }} style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#00d4aa,#0099ff)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13 }}>DC</div>
             <span style={{ fontFamily:"'Barlow Condensed'", fontWeight:900, fontSize:20, letterSpacing:1 }}>DC.SPORTS</span>
           </div>
@@ -427,10 +428,7 @@ export default function App() {
             )}
 
             {isAdmin && (
-              <div className="hov" onClick={() => setPage("admin")} style={{ padding:"7px 13px", borderRadius:8, fontSize:14, fontWeight:700, color:"#f59e0b", position:"relative", background: page==="admin" ? "rgba(245,158,11,0.1)" : "transparent" }}>
-                ⚙ Admin
-                {pendingCnt > 0 && <span className="pulse" style={{ position:"absolute", top:6, right:6, width:7, height:7, background:"#ef4444", borderRadius:"50%" }} />}
-              </div>
+              
             )}
           </div>
         </div>
