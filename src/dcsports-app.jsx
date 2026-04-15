@@ -428,9 +428,6 @@ export default function App() {
               <Btn style={{ padding:"8px 18px", fontSize:13 }} onClick={() => setPage("login")}>Connexion</Btn>
             )}
 
-            {isAdmin && (
-              
-            )}
           </div>
         </div>
       </nav>
