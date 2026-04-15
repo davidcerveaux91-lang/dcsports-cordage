@@ -3,7 +3,7 @@
 // Importe ce fichier dans ton composant principal (dcsports-app.jsx)
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, query, orderBy } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, query, orderBy, where } from 'firebase/firestore';
 
 // Firebase config ─── DCSPORTS-CORDAGE
 const firebaseConfig = {
@@ -94,25 +94,38 @@ export async function notifyClient({ clientFcmToken, order }) {
 }
 
 // ─── Firestore : Utilisateurs ──────────────────────────────────────────────
-export async function saveUserToFirestore(user) {
+export async function saveUser(user) {
     try { await setDoc(doc(db, 'users', user.id), user, { merge: true }); }
     catch(e) { console.error('[DB] saveUser error:', e); }
 }
 
-export async function getAllUsersFromFirestore() {
+export async function getUsers() {
     try {
         const snap = await getDocs(collection(db, 'users'));
         return snap.docs.map(d => d.data());
     } catch(e) { console.error('[DB] getUsers error:', e); return []; }
 }
 
+// ─── Firestore : Utilisateur par email ────────────────────────────────────────
+export async function getUserByEmail(email) {
+    try {
+        const q = query(collection(db, 'users'), where('email', '==', email));
+        const snap = await getDocs(q);
+        if (snap.empty) return null;
+        return snap.docs[0].data();
+    } catch (e) {
+        console.error('getUserByEmail error', e);
+        return null;
+    }
+}
+
 // ─── Firestore : Commandes ─────────────────────────────────────────────────
-export async function saveOrderToFirestore(order) {
+export async function saveOrder(order) {
     try { await setDoc(doc(db, 'orders', order.id), order, { merge: true }); }
     catch(e) { console.error('[DB] saveOrder error:', e); }
 }
 
-export async function getAllOrdersFromFirestore() {
+export async function getOrders() {
     try {
         const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
@@ -125,7 +138,7 @@ export async function getAllOrdersFromFirestore() {
     }
 }
 
-export async function updateOrderInFirestore(orderId, updates) {
+export async function updateOrder(orderId, updates) {
     try { await updateDoc(doc(db, 'orders', orderId), updates); }
     catch(e) { console.error('[DB] updateOrder error:', e); }
 }
