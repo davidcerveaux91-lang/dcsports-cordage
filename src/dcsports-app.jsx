@@ -116,7 +116,7 @@ const HOURS = [
   { day:"Dimanche", h:"Fermé" },
 ];
 
-const ADMIN_CODE = import.meta.env.VITE_ADMIN_CODE;
+const ADMIN_CODE = "dc-admin-2026";
 const TODAY_NAME = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"][new Date().getDay()];
 
 const DELIVERY_MODES = [
