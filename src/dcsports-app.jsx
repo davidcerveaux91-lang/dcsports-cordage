@@ -208,12 +208,41 @@ export default function App() {
         const s = sessionStr ? JSON.parse(sessionStr) : null;
         if (adminSaved) { setIsAdmin(true); setPage("admin"); }
         else if (s) { const found = u.find(x => x.email === s.email || x.id === s.id); if (found) { setUser(found); setPage("account"); } }
-        initFCM().then(token => { if (token) listenForegroundMessages(p => notify(p.notification?.title || 'Notification')); });
+        initFCM().then(token => { if (token) listenForegroundMessages(p => notify(p.notification?.title || 'Notification')); playSound('new_order'); });
       } catch (e) { console.error("Init error:", e); }
     })();
   }, []);
 
   const notify = (msg, type="ok") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
+
+  // ── SOUND NOTIFICATIONS ───────────────────────────────────────────────────
+  const playSound = (type) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      if (type === 'new_order') {
+        o.frequency.setValueAtTime(880, ctx.currentTime);
+        o.frequency.setValueAtTime(1100, ctx.currentTime + 0.12);
+        g.gain.setValueAtTime(0.35, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.4);
+      } else if (type === 'status_update') {
+        o.frequency.setValueAtTime(660, ctx.currentTime);
+        o.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+        g.gain.setValueAtTime(0.3, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.35);
+      } else {
+        o.frequency.setValueAtTime(740, ctx.currentTime);
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.3);
+      }
+    } catch(e) { /* AudioContext not available */ }
+  };
 
   // ── FCM Foreground Listener ─────────────────────────────────────────────
   useEffect(() => {
@@ -223,6 +252,7 @@ export default function App() {
       unsubscribe = listenForegroundMessages((payload) => {
       const { title, body } = payload.notification || {};
       notify(`${title} — ${body}`);
+      playSound('notification');
     });
     } catch(e) { console.warn("FCM listener failed:", e); }
     return unsubscribe;
@@ -351,6 +381,7 @@ export default function App() {
     // Mettre à jour l'état local
     const no = orders.map(o => o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o);
     setOrders(no);
+    playSound('status_update');
     // Notifier le client si commande prête
     if (status === "ready" || status === "in_progress") {
       const order = no.find(o => o.id === id);
@@ -795,7 +826,7 @@ export default function App() {
         {/* ══════════════════════════════ REGISTER ══════════════════════════════ */}
         {page === "forgot" && (
           <div className="fade" style={{ maxWidth:400, margin:"60px auto 0" }}>
-            <h1 style={{ fontFamily:"'Barlow Condensed'", fontSize:44, fontWeight:900, marginBottom:6 }}>MOT DE PASSE OUBLIÃ</h1>
+            <h1 style={{ fontFamily:"'Barlow Condensed'", fontSize:44, fontWeight:900, marginBottom:6 }}>MOT DE PASSE OUBLIÉ</h1>
             <p style={{ color:"rgba(255,255,255,0.5)", marginBottom:28 }}>Recevez un nouveau mot de passe par email</p>
             <div style={{ ...G.card, padding:30, display:"flex", flexDirection:"column", gap:14 }}>
               <Input type="email" placeholder="Votre adresse email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)}
@@ -803,7 +834,7 @@ export default function App() {
               {forgotMsg && <div style={{ color:forgotMsg.ok?"#00d4aa":"#ef4444", fontSize:13, textAlign:"center" }}>{forgotMsg.text}</div>}
               <Btn style={{ width:"100%" }} onClick={doForgotPassword}>Envoyer le nouveau mot de passe</Btn>
               <div style={{ textAlign:"center", fontSize:13, color:"rgba(255,255,255,0.4)" }}>
-                <span style={{ color:"#00d4aa", cursor:"pointer", fontWeight:700 }} onClick={() => { setPage("login"); setForgotMsg(null); setForgotEmail(""); }}>â Retour Ã  la connexion</span>
+                <span style={{ color:"#00d4aa", cursor:"pointer", fontWeight:700 }} onClick={() => { setPage("login"); setForgotMsg(null); setForgotEmail(""); }}>â Retour à la connexion</span>
               </div>
             </div>
           </div>
