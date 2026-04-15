@@ -1,4 +1,4 @@
-// ─── DC.SPORTS ─── Firebase Utility ───────────────────────────────────────
+// ─── DC.SPORTS ─── Firebase Utility ────────────────────────────────────────
 // Fichier : src/firebase.js
 // Importe ce fichier dans ton composant principal (dcsports-app.jsx)
 import { initializeApp } from 'firebase/app';
