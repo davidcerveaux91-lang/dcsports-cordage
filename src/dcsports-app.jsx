@@ -272,15 +272,15 @@ export default function App() {
 
 
   const doRegister = async () => {
+    // IMPORTANT: Lire le DOM AVANT tout setState (sinon React re-render efface les valeurs)
+    const _regInputs = document.querySelectorAll('input[placeholder="Nom complet"], input[placeholder="Email"], input[placeholder="Mot de passe"]');
+    const _domName = _regInputs[0] ? _regInputs[0].value.trim() : '';
+    const _domEmail = _regInputs[1] ? _regInputs[1].value.trim() : '';
+    const _domPass = _regInputs[2] ? _regInputs[2].value : '';
+    const rName = regF.name || _domName;
+    const rEmail = regF.email || _domEmail;
+    const rPassword = regF.password || _domPass;
     setAuthErr("");
-    // Lire les valeurs depuis le DOM (autofill navigateur ne déclenche pas toujours onChange)
-    const regInputs = document.querySelectorAll('input[placeholder="Nom complet"], input[placeholder="Email"], input[placeholder="Mot de passe"]');
-    const domName = regInputs[0] ? regInputs[0].value.trim() : '';
-    const domEmail = regInputs[1] ? regInputs[1].value.trim() : '';
-    const domPass = regInputs[2] ? regInputs[2].value : '';
-    const rName = regF.name || domName;
-    const rEmail = regF.email || domEmail;
-    const rPassword = regF.password || domPass;
     if (!rName || !rEmail || !rPassword) { setAuthErr("Tous les champs sont requis"); return; }
     // Vérifier si l'email existe déjà dans Firestore
     try {
