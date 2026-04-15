@@ -229,8 +229,13 @@ export default function App() {
 
   const doLogin = async () => {
     setAuthErr("");
+    // Lire valeurs depuis DOM (autofill navigateur)
+    const loginEmailInputs = document.querySelectorAll('input[placeholder="Email"]');
+    const loginPassInputs = document.querySelectorAll('input[placeholder="Mot de passe"]');
+    const lEmail = lEmail || (loginEmailInputs[0] ? loginEmailInputs[0].value.trim() : '');
+    const lPassword = lPassword || (loginPassInputs[0] ? loginPassInputs[0].value : '');
     // Connexion admin
-    if (loginF.email === import.meta.env.VITE_ADMIN_EMAIL && loginF.password === import.meta.env.VITE_ADMIN_PASSWORD) {
+    if (lEmail === import.meta.env.VITE_ADMIN_EMAIL && lPassword === import.meta.env.VITE_ADMIN_PASSWORD) {
       setIsAdmin(true); setPage("admin"); localStorage.setItem('dcsports_isAdmin', 'true');
       try {
         const token = await initFCM();
@@ -239,8 +244,8 @@ export default function App() {
       return;
     }
     // Connexion client - chercher dans Firestore
-    const u = await getUserByEmail(loginF.email);
-    if (!u || u.password !== loginF.password) { setAuthErr("Email ou mot de passe incorrect"); return; }
+    const u = await getUserByEmail(lEmail);
+    if (!u || u.password !== lPassword) { setAuthErr("Email ou mot de passe incorrect"); return; }
     setUser(u);
     // Sauvegarder FCM token du client dans Firestore
     try {
@@ -268,25 +273,42 @@ export default function App() {
 
   const doRegister = async () => {
     setAuthErr("");
-    if (!regF.name || !regF.email || !regF.password) { setAuthErr("Tous les champs sont requis"); return; }
+    // Lire les valeurs depuis le DOM (autofill navigateur ne déclenche pas toujours onChange)
+    const regInputs = document.querySelectorAll('input[placeholder="Nom complet"], input[placeholder="Email"], input[placeholder="Mot de passe"]');
+    const domName = regInputs[0] ? regInputs[0].value.trim() : '';
+    const domEmail = regInputs[1] ? regInputs[1].value.trim() : '';
+    const domPass = regInputs[2] ? regInputs[2].value : '';
+    const rName = regF.name || domName;
+    const rEmail = regF.email || domEmail;
+    const rPassword = regF.password || domPass;
+    if (!rName || !rEmail || !rPassword) { setAuthErr("Tous les champs sont requis"); return; }
     // Vérifier si l'email existe déjà dans Firestore
-    const existing = await getUserByEmail(regF.email);
-    if (existing) { setAuthErr("Email déjà utilisé"); return; }
-    const nu = { id: Date.now().toString(), name: regF.name, email: regF.email, password: regF.password, createdAt: new Date().toISOString() };
+    try {
+      const existing = await getUserByEmail(rEmail);
+      if (existing) { setAuthErr("Email déjà utilisé"); return; }
+    } catch(e) { console.warn("getUserByEmail error:", e); }
+    // Créer l'objet utilisateur
+    const nu = { id: Date.now().toString(), name: rName, email: rEmail, password: rPassword, createdAt: new Date().toISOString() };
     // Récupérer le token FCM pour les notifications client
     let userWithToken = nu;
     try {
       const token = await initFCM();
-      if (token) userWithToken = { ...nu, fcmToken: token };
+      if (token) { userWithToken = { ...nu, fcmToken: token }; }
     } catch(e) { console.warn("FCM init failed:", e); }
     // Sauvegarder dans Firestore
-    await saveUser(userWithToken);
+    try {
+      await saveUser(userWithToken);
+    } catch(e) {
+      console.error("saveUser error:", e);
+      setAuthErr("Erreur lors de la création du compte. Réessayez.");
+      return;
+    }
     // Mettre à jour l'état local
-    const allUsers = await getUsers();
+    const allUsers = await getUsers().catch(() => []);
     setUsers(allUsers);
     setUser(userWithToken);
     localStorage.setItem('dcsports_session', JSON.stringify(userWithToken));
-    setPage("account"); notify('Compte créé ! Bienvenue ' + nu.name + ' !');
+    setPage("account"); notify('Compte créé ! Bienvenue ' + rName + ' !');
   };
   const doLogout = async () => { setUser(null); setIsAdmin(false); localStorage.removeItem("dcsports_session"); localStorage.setItem("dcsports_isAdmin", "false"); setPage("home"); };
   const doForgotPassword = async () => { setForgotMsg(null); const em=forgotEmail.trim().toLowerCase(); if (!em){setForgotMsg({ok:false,text:"Saisissez votre email."});return;} const u=users.find(x=>x.email.toLowerCase()===em); if(!u){setForgotMsg({ok:false,text:"Aucun compte trouvé."});return;} const np=Math.random().toString(36).slice(2,5).toUpperCase()+Math.floor(10+Math.random()*90); const upd={...u,password:np}; const upds=users.map(x=>x.id===u.id?upd:x); setUsers(upds); await saveUser(upds.find(u => u.email === forgotEmail)); const allU = await getUsers(); setUsers(allU); try{await sendResetPasswordEmail({toEmail:u.email,toName:u.name,newPassword:np}); setForgotMsg({ok:true,text:"Nouveau mot de passe envoyé à "+u.email}); setForgotEmail("");}catch(e){setForgotMsg({ok:false,text:"Erreur envoi. Contactez le magasin."});} };
