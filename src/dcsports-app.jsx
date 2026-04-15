@@ -407,7 +407,7 @@ export default function App() {
         <div style={{ maxWidth:900, margin:"0 auto", padding:"0 18px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
 
           {/* Logo */}
-          <div className="hov" onClick={() => { setPage("home"); setAdminClickCount(c => { const n=c+1; if(n>=5){ setTimeout(()=>setPage("admin"),10); return 0; } clearTimeout(window._aT); window._aT=setTimeout(()=>setAdminClickCount(0),2000); return n; }); }} style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div className="hov" onClick={() => { setPage("home"); setAdminClickCount(c => { const n=c+1; if(n>=5){ setPage("admin"); return 0; } return n; }); }} style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#00d4aa,#0099ff)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13 }}>DC</div>
             <span style={{ fontFamily:"'Barlow Condensed'", fontWeight:900, fontSize:20, letterSpacing:1 }}>DC.SPORTS</span>
           </div>
