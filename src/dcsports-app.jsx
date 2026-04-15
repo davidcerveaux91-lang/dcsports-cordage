@@ -193,6 +193,7 @@ export default function App() {
   const [regF,    setRegF]    = useState({ name:"", email:"", password:"" });
   const [authErr, setAuthErr] = useState("");
   const [adminPwd,setAdminPwd]= useState("");
+  const [adminTab,  setAdminTab]  = useState("commandes");
   const [draft,   setDraft]   = useState({ racket:"", stringId:null, colorId:null, tension:24, notes:"", deliveryMode:"standard" });
   const [brandFilter, setBrandFilter] = useState("Tous");
 
@@ -928,7 +929,24 @@ export default function App() {
               </div>
             </div>
 
-            {orders.length === 0 ? (
+            
+            {/* ── Onglets Admin ── */}
+            <div style={{ display:"flex", gap:0, marginTop:24, marginBottom:20, borderBottom:"1px solid rgba(255,255,255,0.12)" }}>
+              {[["commandes","📋 Commandes"],["clients","👥 Clients"]].map(([key,label]) => (
+                <button key={key} onClick={() => setAdminTab(key)}
+                  style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 22px", fontWeight:700, fontSize:13, fontFamily:"'Barlow Condensed'", letterSpacing:1,
+                    color: adminTab===key ? "#00d4aa" : "rgba(255,255,255,0.4)",
+                    borderBottom: adminTab===key ? "2px solid #00d4aa" : "2px solid transparent",
+                    transition:"all 0.2s" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* ── Onglet Commandes ── */}
+            {adminTab === "commandes" && (
+              <div>
+                {orders.length === 0 ? (
               <div style={{ ...G.card, padding:44, textAlign:"center", color:"rgba(255,255,255,0.38)" }}>
                 <div style={{ fontSize:40, marginBottom:12 }}>📭</div>
                 <div>Aucune commande pour l'instant</div>
@@ -986,6 +1004,64 @@ export default function App() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+              </div>
+            )}
+
+            {/* ── Onglet Clients ── */}
+            {adminTab === "clients" && (
+              <div>
+                {users.length === 0 ? (
+                  <div style={{ ...G.card, padding:44, textAlign:"center", color:"rgba(255,255,255,0.38)" }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>👤</div>
+                    <div>Aucun client inscrit</div>
+                  </div>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                    {[...users].sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||"")).map(u => {
+                      const clientOrders = orders.filter(o => o.userEmail === u.email || o.userName === u.name);
+                      return (
+                        <div key={u.id} style={{ ...G.card, padding:22 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12 }}>
+                            <div>
+                              <div style={{ fontWeight:800, fontSize:17, marginBottom:4 }}>👤 {u.name}</div>
+                              <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}>✉️ {u.email}</div>
+                              <div style={{ fontSize:12, color:"rgba(255,255,255,0.35)" }}>
+                                Inscrit le {u.createdAt ? new Date(u.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric" }) : "—"}
+                              </div>
+                            </div>
+                            <div style={{ ...G.card, padding:"8px 16px", background:"rgba(0,212,170,0.08)", border:"1px solid rgba(0,212,170,0.2)", borderRadius:10, textAlign:"center", minWidth:90 }}>
+                              <div style={{ fontFamily:"'Barlow Condensed'", fontSize:26, fontWeight:900, color:"#00d4aa" }}>{clientOrders.length}</div>
+                              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>commande{clientOrders.length!==1?"s":""}</div>
+                            </div>
+                          </div>
+                          {clientOrders.length > 0 && (
+                            <div style={{ marginTop:16, borderTop:"1px solid rgba(255,255,255,0.08)", paddingTop:12 }}>
+                              <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.4)", marginBottom:8, letterSpacing:1 }}>HISTORIQUE</div>
+                              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                                {[...clientOrders].reverse().map(o => (
+                                  <div key={o.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", background:"rgba(255,255,255,0.04)", borderRadius:8, flexWrap:"wrap", gap:8 }}>
+                                    <div>
+                                      <span style={{ fontWeight:700, fontSize:13 }}>🏸 {o.racket}</span>
+                                      <span style={{ fontSize:12, color:"rgba(255,255,255,0.5)", marginLeft:10 }}>{o.string?.brand} {o.string?.name} · {o.tension}kg · {o.string?.price}€</span>
+                                    </div>
+                                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                      <Badge status={o.status} />
+                                      <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>
+                                        {o.createdAt ? new Date(o.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"short" }) : ""}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
