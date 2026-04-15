@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Clock, MapPin, LogOut, CheckCircle, Package, AlertCircle, User, X } from "lucide-react";
 import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient, saveAdminFcmToken, getAdminFcmToken, sendResetPasswordEmail, saveUser, getUsers, getUserByEmail, saveOrder, getOrders, updateOrder } from './firebase';
 
+let _adminClicks = 0;
+
 // ─── CATALOG DATA ─────────────────────────────────────────────────────────────
 
 const STRINGS = [
@@ -191,7 +193,6 @@ export default function App() {
   const [regF,    setRegF]    = useState({ name:"", email:"", password:"" });
   const [authErr, setAuthErr] = useState("");
   const [adminPwd,setAdminPwd]= useState("");
-  const [adminClickCount, setAdminClickCount] = useState(0);
   const [draft,   setDraft]   = useState({ racket:"", stringId:null, colorId:null, tension:24, notes:"", deliveryMode:"standard" });
   const [brandFilter, setBrandFilter] = useState("Tous");
 
@@ -407,7 +408,7 @@ export default function App() {
         <div style={{ maxWidth:900, margin:"0 auto", padding:"0 18px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
 
           {/* Logo */}
-          <div className="hov" onClick={() => { setPage("home"); setAdminClickCount(c => { const n=c+1; if(n>=5){ setPage("admin"); return 0; } return n; }); }} style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div className="hov" onClick={() => { setPage("home"); _adminClicks++; if(_adminClicks >= 5){ _adminClicks = 0; setPage("admin"); } }} style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#00d4aa,#0099ff)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13 }}>DC</div>
             <span style={{ fontFamily:"'Barlow Condensed'", fontWeight:900, fontSize:20, letterSpacing:1 }}>DC.SPORTS</span>
           </div>
