@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock, MapPin, LogOut, CheckCircle, Package, AlertCircle, User, X } from "lucide-react";
-import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient, saveAdminFcmToken, getAdminFcmToken, sendResetPasswordEmail, saveUser, getUsers, getUserByEmail, saveOrder, getOrders, updateOrder } from './firebase';
+import { initFCM, listenForegroundMessages, notifyAdmin, notifyClient, saveAdminFcmToken, getAdminFcmToken, sendResetPasswordEmail, saveUser, getUsers, getUserByEmail, saveOrder, getOrders, updateOrder, deleteOrder } from './firebase';
 
 let _adminClicks = 0;
 
@@ -207,7 +207,7 @@ export default function App() {
         const sessionStr = localStorage.getItem('dcsports_session');
         const s = sessionStr ? JSON.parse(sessionStr) : null;
         if (adminSaved) { setIsAdmin(true); setPage("admin"); }
-        else if (s) { const found = u.find(x => x.id === s.id); if (found) { setUser(found); setPage("account"); } }
+        else if (s) { const found = u.find(x => x.email === s.email || x.id === s.id); if (found) { setUser(found); setPage("account"); } }
         initFCM().then(token => { if (token) listenForegroundMessages(p => notify(p.notification?.title || 'Notification')); });
       } catch (e) { console.error("Init error:", e); }
     })();
@@ -321,7 +321,7 @@ export default function App() {
   const submitOrder = async () => {
     if (!draft.racket || !draft.stringId) { notify("Veuillez remplir tous les champs", "err"); return; }
     const str = STRINGS.find(s => s.id === draft.stringId);
-    const newOrder = { id: Date.now().toString(), userId: user.id, userName: user.name,
+    const newOrder = { id: Date.now().toString(), userId: user.id, userEmail: user.email, userName: user.name,
       racket: draft.racket, string: str, tension: draft.tension, colorId: draft.colorId, notes: draft.notes, deliveryMode: draft.deliveryMode,
       status: "pending", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     // Sauvegarder la commande dans Firestore
@@ -338,7 +338,14 @@ export default function App() {
     setPage("account"); notify("Commande envoyée ! Nous vous contacterons bientôt.");
   };
 
-  const updateStatus = async (id, status) => {
+  const doDeleteOrder = async (orderId) => {
+    if (!window.confirm('Supprimer cette commande définitivement ?')) return;
+    try { await deleteOrder(orderId); } catch(e) { console.warn('delete error', e); }
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    notify("Commande supprimée", "ok");
+  };
+
+    const updateStatus = async (id, status) => {
     // Mettre à jour dans Firestore
     try { await updateOrder(id, { status }); } catch(e) { notify("Erreur mise à jour commande", "err"); return; }
     // Mettre à jour l'état local
@@ -348,7 +355,7 @@ export default function App() {
     if (status === "ready") {
       const order = no.find(o => o.id === id);
       if (order) {
-        const clientUser = users.find(u => u.id === order.userId);
+        const clientUser = users.find(u => u.email === order.userEmail || u.id === order.userId);
         if (clientUser && clientUser.fcmToken) {
           try { await notifyClient({ clientFcmToken: clientUser.fcmToken, order }); } catch(e) { console.warn("Client notify failed:", e); }
         }
@@ -999,6 +1006,13 @@ export default function App() {
                           <div style={{ padding:"10px 14px", background:"rgba(0,212,170,0.08)", border:"1px solid rgba(0,212,170,0.28)", borderRadius:10, fontSize:12, color:"#00d4aa", textAlign:"center", fontWeight:700 }}>
                             🔔 Client notifié
                           </div>
+                        )}
+
+                        {o.status === "ready" && (
+                          <Btn style={{ padding:"8px 14px", fontSize:12, background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", color:"#f87171", marginTop:8 }}
+                            onClick={() => doDeleteOrder(o.id)}>
+                            🗑 Supprimer
+                          </Btn>
                         )}
                       </div>
                     </div>
