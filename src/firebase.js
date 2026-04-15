@@ -3,7 +3,7 @@
 // Importe ce fichier dans ton composant principal (dcsports-app.jsx)
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, query, orderBy } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 
 // ─── Config Firebase ───────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -179,4 +179,11 @@ export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
     });
     if (!res.ok) throw new Error('EmailJS error: ' + res.status);
     return res.text();
+}
+
+// Supprimer une commande
+export async function deleteOrder(orderId) {
+    try {
+        await deleteDoc(doc(db, 'orders', orderId));
+    } catch(e) { console.error('[DB] deleteOrder error:', e); }
 }
