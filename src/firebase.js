@@ -1,11 +1,11 @@
-// ─── DC.SPORTS ─── Firebase Utility ────────────────────────────────────────
+// âââ DC.SPORTS âââ Firebase Utility ââââââââââââââââââââââââââââââââââââââââ
 // Fichier : src/firebase.js
 // Importe ce fichier dans ton composant principal (dcsports-app.jsx)
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 
-// ─── Config Firebase ───────────────────────────────────────────────────────────
+// âââ Config Firebase âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const firebaseConfig = {
     apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -18,7 +18,7 @@ const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
-// ─── FCM : Initialisation ──────────────────────────────────────────────────────
+// âââ FCM : Initialisation ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export async function initFCM() {
     try {
         const permission = await Notification.requestPermission();
@@ -32,7 +32,7 @@ export async function initFCM() {
     }
 }
 
-// ─── FCM : Écouter les messages en avant-plan ──────────────────────────────────
+// âââ FCM : Ãcouter les messages en avant-plan ââââââââââââââââââââââââââââââââââ
 export function listenForegroundMessages(callback) {
     try {
         const messaging = getMessaging(app);
@@ -44,7 +44,7 @@ export function listenForegroundMessages(callback) {
     }
 }
 
-// ─── Firestore : Token FCM Admin ───────────────────────────────────────────────
+// âââ Firestore : Token FCM Admin âââââââââââââââââââââââââââââââââââââââââââââââ
 export async function saveAdminFcmToken(token) {
     try {
         await setDoc(doc(db, 'config', 'admin'), { fcmToken: token }, { merge: true });
@@ -63,7 +63,7 @@ export async function getAdminFcmToken() {
     }
 }
 
-// ─── Push Notifications ────────────────────────────────────────────────────────
+// âââ Push Notifications ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export async function sendPushNotification({ token, title, body, data = {} }) {
     try {
         const res = await fetch('/api/send-notification', {
@@ -83,23 +83,25 @@ export async function notifyAdmin({ adminFcmToken, order }) {
     if (!adminFcmToken) return;
     return sendPushNotification({
         token: adminFcmToken,
-        title: '🏸 Nouvelle commande',
-        body: `${order.userName} — ${order.string?.name || '?'} / ${order.racket}`,
+        title: 'ð¸ Nouvelle commande',
+        body: `${order.userName} â ${order.string?.name || '?'} / ${order.racket}`,
         data: { orderId: order.id, type: 'new_order' },
     });
 }
 
-export async function notifyClient({ clientFcmToken, order }) {
+export async function notifyClient({ clientFcmToken, order, title, body }) {
     if (!clientFcmToken) return;
+    const notifTitle = title || '✅ Votre cordage est prêt';
+    const notifBody = body || `Votre raquette est prête à être récupérée !`;
     return sendPushNotification({
         token: clientFcmToken,
-        title: '✅ Votre cordage est prêt',
-        body: `Votre raquette est prête à être récupérée !`,
-        data: { orderId: order.id, type: 'order_ready' },
+        title: notifTitle,
+        body: notifBody,
+        data: { orderId: order.id, type: 'order_update' },
     });
 }
 
-// ─── Firestore : Sauvegarder un utilisateur ──────────────────────────────────
+// âââ Firestore : Sauvegarder un utilisateur ââââââââââââââââââââââââââââââââââ
 // Helper: transforme un email en identifiant Firestore valide
 export function emailToDocId(email) {
     return email.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -122,7 +124,7 @@ export async function getUsers() {
 }
 
 
-// ─── Firestore : Utilisateur par email (recherche directe par ID) ─────────────
+// âââ Firestore : Utilisateur par email (recherche directe par ID) âââââââââââââ
 export async function getUserByEmail(email) {
     try {
         const snap = await getDoc(doc(db, 'users', emailToDocId(email)));
@@ -134,7 +136,7 @@ export async function getUserByEmail(email) {
 }
 
 
-// ─── Firestore : Commandes ─────────────────────────────────────────────────
+// âââ Firestore : Commandes âââââââââââââââââââââââââââââââââââââââââââââââââ
 export async function saveOrder(order) {
     try {
         await setDoc(doc(db, 'orders', order.id), order, { merge: true });
@@ -158,7 +160,7 @@ export async function updateOrder(orderId, updates) {
     } catch(e) { console.error('[DB] updateOrder error:', e); }
 }
 
-// ─── EmailJS : Envoi d'email de réinitialisation ───────────────────────────────
+// âââ EmailJS : Envoi d'email de rÃ©initialisation âââââââââââââââââââââââââââââââ
 export async function sendResetPasswordEmail({ toEmail, toName, newPassword }) {
     const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
