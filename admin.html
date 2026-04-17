@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin DC.SPORTS</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+    input, button { width: 100%; padding: 15px; margin: 10px 0; font-size: 16px; border-radius: 8px; border: 1px solid #ddd; }
+    button { background: #00d4aa; color: #fff; content-size: 17px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+    button.cadeau { background: #ff6b6b; }
+  </style>
+</head>
+<body>
+  <h1>🏸 DC.SPORTS Admin</h1>
+  <input type="tel" id="tel" placeholder="Téléphone client">
+  <button onclick="rechercher()">🔍 Rechercher</button>
+  <div id="resultat"></div>
+
+<script>
+let currentTel = '';
+let currentData = null;
+
+async function rechercher() {
+  const tel = document.getElementById('tel').value.replace(/\s/g, '');
+  currentTel = tel;
+  const res = await fetch(`/api/fidelite?tel=${tel}`);
+  currentData = await res.json();
+  const cadeau = currentData.cordages % 5 === 4;
+  
+  document.getElementById('resultat').innerHTML = `
+    <h2>${currentData.nom}</h2>
+    <div style="font-size:48px;font-weight:bold;color:#00d4aa;">${currentData.cordages}</div>
+    <p>${cadeau ? '🎁 CADEAU DISPONIBLE !' : `Prochain dans ${currentData.prochainCadeau}`}</p>
+    <button class="${cadeau ? 'cadeau' : ''}" onclick="commander('${currentData.nom}')">
+      ${cadeau ? '🎁 Cadeau' : '➕ Commande'}
+    </button>
+  `;
+}
+
+async function commander(nom) {
+  const res = await fetch(`/api/fidelite?tel=${currentTel}&action=commander&nom=${nom}`);
+  const data = await res.json();
+  alert(data.message);
+  rechercher();
+}
+</script>
+</body>
+</html>
